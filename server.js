@@ -4,6 +4,10 @@ import { dbConnect } from "./src/config/dbConfig.js";
 import { responseClient } from "./src/middlewares/responseClient.js";
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+//end points
+import authRoutes from "./src/routes/authRoutes.js";
+
 //middlewares
 import cookieparser from "cookie-parser";
 import cors from "cors";
@@ -23,6 +27,7 @@ app.use(
 );
 app.use(cookieparser());
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 //server status
 app.get("/", (req, res) => {
