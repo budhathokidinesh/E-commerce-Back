@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 8000;
 import authRoutes from "./src/routes/authRoutes.js";
 import adminProductRoute from "./src/routes/admin/productRoute.js";
 import shopProductRoute from "./src/routes/shopping/shopProductRoute.js";
+import shopCartRoute from "./src/routes/shopping/cartRoute.js";
 
 //middlewares
 import cookieparser from "cookie-parser";
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin/products", adminProductRoute);
 app.use("/api/shop/products", shopProductRoute);
+app.use("/api/shop/cart", shopCartRoute);
 
 //server status
 app.get("/", (req, res) => {
