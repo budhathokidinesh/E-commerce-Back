@@ -1,5 +1,6 @@
 import Cart from "../../models/Cart.js";
 import Product from "../../models/ProductModel.js";
+import mongoose from "mongoose";
 
 //this is for adding items in cart
 export const addToCart = async (req, res) => {
@@ -18,7 +19,7 @@ export const addToCart = async (req, res) => {
         message: "Product not found",
       });
     }
-    const cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId });
     if (!cart) {
       cart = new Cart({ userId, items: [] });
     }
@@ -55,7 +56,7 @@ export const fetchCartItems = async (req, res) => {
     }
     const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
-      select: "Image title price salePrice",
+      select: "image title price salePrice",
     });
     if (!cart) {
       return res.status(400).json({
@@ -122,8 +123,8 @@ export const updateCartItemsQty = async (req, res) => {
     cart.items[findCurrentProductIndex].quantity = quantity;
     await cart.save();
     await cart.populate({
-      path: "item.productId",
-      select: "Image title price salePrice",
+      path: "items.productId",
+      select: "image title price salePrice",
     });
     const populateCartItems = cart.items.map((item) => ({
       productId: item.productId ? item.productId._id : null,
@@ -152,43 +153,45 @@ export const updateCartItemsQty = async (req, res) => {
 export const deleteCartItems = async (req, res) => {
   try {
     const { userId, productId } = req.params;
-    if (!userId || !productId) {
+
+    // Validate IDs
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(productId)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid data provided",
+        message: "Invalid ID format",
       });
     }
-    const cart = await Cart.findOne({ userId }).populate({
-      path: "item.productId",
-      select: "Image title price salePrice",
+
+    // Atomic operation
+    const cart = await Cart.findOneAndUpdate(
+      { userId, "items.productId": productId },
+      { $pull: { items: { productId } } },
+      { new: true }
+    ).populate({
+      path: "items.productId",
+      select: "image title price salePrice",
     });
+
     if (!cart) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        message: "Cart not found",
+        message: "Cart or product not found",
       });
     }
-    cart.items = cart.items.filter(
-      (item) => item.productId._id.toString() !== productId
-    );
-    await cart.save();
-    await Cart.populate({
-      path: "item.productId",
-      select: "Image title price salePrice",
+
+    return res.status(200).json({
+      success: true,
+      message: "Item deleted successfully",
+      productId,
     });
-    const populateCartItems = cart.items.map((item) => ({
-      productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.image : null,
-      title: item.productId ? item.productId.title : "Product not found",
-      price: item.productId ? item.productId.price : null,
-      salePrice: item.productId ? item.productId.salePrice : null,
-      quantity: item.quantity,
-    }));
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Delete cart error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Error happened while adding cart",
+      message: "Internal server error",
     });
   }
 };
