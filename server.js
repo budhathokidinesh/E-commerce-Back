@@ -11,6 +11,7 @@ import adminProductRoute from "./src/routes/admin/productRoute.js";
 import shopProductRoute from "./src/routes/shopping/shopProductRoute.js";
 import shopCartRoute from "./src/routes/shopping/cartRoute.js";
 import shopAddressRoute from "./src/routes/shopping/addressRoute.js";
+import shopOrderRoute from "./src/routes/shopping/orderRoute.js";
 
 //middlewares
 import cookieparser from "cookie-parser";
@@ -36,6 +37,7 @@ app.use("/api/admin/products", adminProductRoute);
 app.use("/api/shop/products", shopProductRoute);
 app.use("/api/shop/cart", shopCartRoute);
 app.use("/api/shop/address", shopAddressRoute);
+app.use("/api/shop/order", shopOrderRoute);
 
 //server status
 app.get("/", (req, res) => {
