@@ -61,7 +61,7 @@ export const createOrder = async (req, res) => {
     res.status(201).json({
       success: true,
       approvalURL,
-      orderID: newlyCreatedOrder._id,
+      orderId: newlyCreatedOrder._id,
     });
   } catch (error) {
     console.error("PayPal order creation error:", error);
@@ -74,34 +74,44 @@ export const createOrder = async (req, res) => {
 
 export const capturePayment = async (req, res) => {
   try {
-    const { paymentId, payerId, orderID } = req.body;
-    let order = await Order.findById(orderID);
+    const { token, payerId, orderId } = req.body;
+    //this is for capturing the paypal payment
+    const request = new paypal.orders.OrdersCaptureRequest(token);
+    request.requestBody({});
+    const capture = await paypalClient.execute(request);
+    //this is for finding and update order in DB
+    const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({
         success: false,
         message: "Order can not be found",
       });
     }
-
+    //this is for updating the detail
     order.paymentStatus = "paid";
     order.orderStatus = "confirmed";
-    order.paymentId = paymentId;
     order.payerId = payerId;
-
+    order.paypalCaptureId =
+      capture.result?.purchase_units?.[0]?.payments?.captures?.[0].id || null;
     const getCartId = order.cartId;
 
-    await Cart.findByIdAndDelete(getCartId);
+    //this is for clearing the cart after saved
+    if (order.cartId) {
+      await Cart.findByIdAndDelete(order.cartId);
+    }
+    //this is for saving
     await order.save();
+
     res.status(200).json({
       success: true,
-      message: "Order confirmed",
+      message: "Payment captured and Order confirmed",
       data: order,
     });
   } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Failed to capture payment",
     });
   }
 };
