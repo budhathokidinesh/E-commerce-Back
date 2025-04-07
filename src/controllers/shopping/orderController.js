@@ -1,5 +1,7 @@
 import paypal from "@paypal/checkout-server-sdk";
+import paypalClient from "../../helpers/paypalClient.js";
 import Order from "../../models/Order.js";
+import Cart from "../../models/Cart.js";
 export const createOrder = async (req, res) => {
   try {
     const {
@@ -14,77 +16,87 @@ export const createOrder = async (req, res) => {
       orderUpdateDate,
       paymentId,
       payerId,
+      cartId,
     } = req.body;
-    const create_payment_json = {
-      intent: "sale",
-      payer: {
-        payment_method: "paypal",
-      },
-      redirect_urls: {
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer("return=representation");
+    request.requestBody({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: "AUD",
+            value: totalAmount.toFixed(2),
+          },
+        },
+      ],
+      application_context: {
         return_url: "http://localhost:5173/shop/paypal-return",
         cancel_url: "http://localhost:5173/shop/paypal-cancel",
       },
-      transactions: [
-        {
-          item_list: {
-            items: cartItems.map((item) => ({
-              name: item.title,
-              sku: item.productId,
-              price: item.price.toFixed(2),
-              currency: "AUD",
-              quantity: item.quantity,
-            })),
-          },
-          amount: {
-            currency: "AUD",
-            total: totalAmount.toFixed(2),
-          },
-          description: "Description",
-        },
-      ],
-    };
-    paypal.payment.create(create_payment_json, async (error, paymentInfo) => {
-      if (error) {
-        console.log(error);
-        return res.status(500).json({
-          success: false,
-          message: "Error occured while creating paypal payment",
-        });
-      } else {
-        const newlyCreatedOrder = new Order({
-          userId,
-          cartItems,
-          addressInfo,
-          orderStatus,
-          paymentMethod,
-          paymentStatus,
-          totalAmount,
-          orderDate,
-          orderUpdateDate,
-          paymentId,
-          payerId,
-        });
-        await newlyCreatedOrder.save();
-        const approvalURL = paymentInfo.links.find(
-          (link) => link.rel === "approval_url"
-        ).href;
-        res.status(201).json({
-          success: true,
-          approvalURL,
-          orderID: newlyCreatedOrder?._id,
-        });
-      }
+    });
+
+    const order = await paypalClient.execute(request);
+
+    const newlyCreatedOrder = new Order({
+      userId,
+      cartId,
+      cartItems,
+      addressInfo,
+      orderStatus,
+      paymentMethod,
+      paymentStatus,
+      totalAmount,
+      orderDate,
+      orderUpdateDate,
+      paypalOrderId: order.result.id,
+    });
+
+    await newlyCreatedOrder.save();
+
+    const approvalURL = order.result.links.find(
+      (link) => link.rel === "approve"
+    ).href;
+
+    res.status(201).json({
+      success: true,
+      approvalURL,
+      orderID: newlyCreatedOrder._id,
     });
   } catch (error) {
-    console.log(error);
+    console.error("PayPal order creation error:", error);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Failed to create PayPal order",
     });
   }
 };
+
 export const capturePayment = async (req, res) => {
   try {
+    const { paymentId, payerId, orderID } = req.body;
+    let order = await Order.findById(orderID);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order can not be found",
+      });
+    }
+
+    order.paymentStatus = "paid";
+    order.orderStatus = "confirmed";
+    order.paymentId = paymentId;
+    order.payerId = payerId;
+
+    const getCartId = order.cartId;
+
+    await Cart.findByIdAndDelete(getCartId);
+    await order.save();
+    res.status(200).json({
+      success: true,
+      message: "Order confirmed",
+      data: order,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({
