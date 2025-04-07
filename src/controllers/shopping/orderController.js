@@ -2,6 +2,7 @@ import paypal from "@paypal/checkout-server-sdk";
 import paypalClient from "../../helpers/paypalClient.js";
 import Order from "../../models/Order.js";
 import Cart from "../../models/Cart.js";
+//this is for creating the order
 export const createOrder = async (req, res) => {
   try {
     const {
@@ -72,6 +73,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
+//this is capturing the payment
 export const capturePayment = async (req, res) => {
   try {
     const { token, payerId, orderId } = req.body;
@@ -112,6 +114,53 @@ export const capturePayment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to capture payment",
+    });
+  }
+};
+
+//this is getting all orders
+export const getAllOrdersByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const orders = await Order.find({ userId });
+    if (!orders.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Orders not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Error occured while getting orders",
+    });
+  }
+};
+//this is for getting order details
+export const getOrderDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Error occured while getting order details",
     });
   }
 };
