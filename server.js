@@ -6,12 +6,13 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 //end points
-import authRoutes from "./src/routes/authRoutes.js";
+import authRoutes from "./src/routes/auth/authRoutes.js";
 import adminProductRoute from "./src/routes/admin/productRoute.js";
 import shopProductRoute from "./src/routes/shopping/shopProductRoute.js";
 import shopCartRoute from "./src/routes/shopping/cartRoute.js";
 import shopAddressRoute from "./src/routes/shopping/addressRoute.js";
 import shopOrderRoute from "./src/routes/shopping/orderRoute.js";
+import shopSearchRoute from "./src/routes/shopping/searchRoute.js";
 import adminOrderRoute from "./src/routes/admin/orderRoute.js";
 
 //middlewares
@@ -35,11 +36,12 @@ app.use(cookieparser());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin/products", adminProductRoute);
+app.use("/api/admin/orders", adminOrderRoute);
 app.use("/api/shop/products", shopProductRoute);
 app.use("/api/shop/cart", shopCartRoute);
 app.use("/api/shop/address", shopAddressRoute);
 app.use("/api/shop/order", shopOrderRoute);
-app.use("/api/admin/orders", adminOrderRoute);
+app.use("/api/shop/search", shopSearchRoute);
 
 //server status
 app.get("/", (req, res) => {

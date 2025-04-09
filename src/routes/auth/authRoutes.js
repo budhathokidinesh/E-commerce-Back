@@ -4,7 +4,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-} from "../controllers/auth/authController.js";
+} from "../../controllers/auth/authController.js";
 
 const router = express.Router();
 router.post("/register", registerUser);
