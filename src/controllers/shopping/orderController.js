@@ -2,6 +2,7 @@ import paypal from "@paypal/checkout-server-sdk";
 import paypalClient from "../../helpers/paypalClient.js";
 import Order from "../../models/Order.js";
 import Cart from "../../models/Cart.js";
+import Product from "../../models/ProductModel.js";
 //this is for creating the order
 export const createOrder = async (req, res) => {
   try {
@@ -93,6 +94,18 @@ export const capturePayment = async (req, res) => {
     order.paymentStatus = "paid";
     order.orderStatus = "confirmed";
     order.payerId = payerId;
+    //this is for updating the stock
+    for (let item of order.cartItems) {
+      let product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: `Not enough stock for this product ${product.title}`,
+        });
+      }
+      product.stock -= item.quantity;
+      await product.save();
+    }
     order.paypalCaptureId =
       capture.result?.purchase_units?.[0]?.payments?.captures?.[0].id || null;
     const getCartId = order.cartId;
