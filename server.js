@@ -20,6 +20,7 @@ import shopAddressRoute from "./src/routes/shopping/addressRoute.js";
 import shopReviewRoute from "./src/routes/shopping/reviewRoute.js";
 import shopOrderRoute from "./src/routes/shopping/orderRoute.js";
 import shopSearchRoute from "./src/routes/shopping/searchRoute.js";
+import featureRoute from "./src/routes/commonRoute/featureRoute.js";
 
 //middlewares
 import cookieparser from "cookie-parser";
@@ -54,6 +55,9 @@ app.use("/api/shop/address", shopAddressRoute);
 app.use("/api/shop/order", shopOrderRoute);
 app.use("/api/shop/search", shopSearchRoute);
 app.use("/api/shop/review", shopReviewRoute);
+
+//this is for feature images
+app.use("/api/common/feature", featureRoute);
 
 //server status
 app.get("/", (req, res) => {
