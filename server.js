@@ -27,7 +27,7 @@ import cookieparser from "cookie-parser";
 import cors from "cors";
 app.use(
   cors({
-    origin: " http://localhost:5173",
+    origin: ["http://localhost:5173", "https://dineshstore.netlify.app"],
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: [
       "Content-Type",
